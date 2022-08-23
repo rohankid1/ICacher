@@ -5,5 +5,10 @@ edition = "2021"
 authors = ["Rohan"]
 description = "A minimal crate for caching functions"
 license = "MIT"
+readme = "README.md"
+repository = "https://github.com/rohankid1/ICacher"
+homepage = "https://github.com/rohankid1/ICacher"
+keywords = ["caching", "cache", "cacher", "function", "optimisation"]
+category = "Caching"
 
 [dependencies]
