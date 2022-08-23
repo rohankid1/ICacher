@@ -1,0 +1,9 @@
+[package]
+name = "icacher"
+version = "0.1.2"
+edition = "2021"
+authors = ["Rohan"]
+description = "A minimal crate for caching functions"
+license = "MIT"
+
+[dependencies]
