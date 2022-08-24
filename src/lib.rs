@@ -80,19 +80,6 @@ where
     /// Same as `to()` except that it does not change the value
     /// at all.
     fn to_unchanged(&mut self, func: IFunc);
-
-    // /// May or may not cache the function depending on a condition.
-    // ///
-    // /// If the resulting condition returns true, it will cache
-    // /// the function, otherwise it will not.
-    // fn cache_if<T: Clone, CondFunc: Fn(T) -> bool>(&mut self, arg: T, condition: CondFunc, func: IFunc);
-
-    // /// May or may cache the function depending on a condition.
-    // /// This function is literally the reciprocal of `cache_if`
-    // ///
-    // /// If the resulting condition returns false, it will cache
-    // /// the function, otherwise it will not.
-    // fn cache_not_if<T: Clone, CondFunc: Fn(T) -> bool>(&mut self, arg: T, condition: CondFunc, func: IFunc);
 }
 
 /// The built-in, default, generic type for caching functions and
