@@ -1,15 +1,8 @@
 //! # ICacher
-//! This crate provides one new type (and 1 public trait for which
-//! you can implement your cacher struct(s) with) which is useful for
-//! optimisations (it is called [memoization](https://en.wikipedia.org/wiki/Memoization)). Running the same function (that
-//! return the same value) over and over again can be inefficient.
-//! This lightweight, dependency-free crate attempts solve this problem by caching
-//! each return value. Only once, unless explicitly called to run
-//! multiple times, it will be called.
-//!
-//! This crate will probably receive regular updates from time to time.
-//! Updates *may* or *may not* have new features in order to keep this
-//! lightweight and simple.
+//! Running the same function (that return the same value) over and over again
+//! can be inefficient. This lightweight, dependency-free crate attempts to
+//! solve this problem by caching each return value. It will only, unless 
+//! explicitly called to run multiple times or if the value isn't cached, be called once.
 
 use std::{collections::HashMap, hash::Hash};
 
@@ -38,7 +31,7 @@ where
 
 /// This trait is deprecated; however, the trait [`FnCacher`] remains
 /// as to allow basic, but minimalistic, guidance.
-#[deprecated]
+#[deprecated = "You should manually implement instead of the now deprecated traits."]
 pub trait FnCacherExt<IFunc, IType, IReturn>: FnCacher<IFunc, IType, IReturn>
 where
     IFunc: Fn(IType) -> IReturn,
@@ -63,11 +56,11 @@ where
 /// This trait, as well as [`FnCacherExt`], is deprecated as extension traits
 /// did not provide any benefits; methods that were in the
 /// trait are now provided directly in the [`ICacher`] type.
-/// 
+///
 /// The reason they are marked as deprecated and not removed,
 /// is that to minimise the amount of breaking changes of other
 /// codebases.
-#[deprecated]
+#[deprecated = "You should manually implement instead of the now deprecated traits."]
 pub trait ICacherExt<IFunc, IType, IReturn>: __private::Sealed
 where
     IFunc: Fn(IType) -> IReturn,
@@ -79,7 +72,7 @@ where
 
     /// Modifies the closure of the Cacher.
     ///
-    /// Note that calling this function will reset the value to [`None`].
+    /// Note that calling this function will clear the HashMap.
     /// If you want to achieve the same but without resetting it,
     /// use the `to_unchanged()` method.
     fn to(&mut self, func: IFunc);
@@ -104,6 +97,7 @@ where
 
 /// The built-in, default, generic type for caching functions and
 /// storing its value in a [`HashMap`].
+#[derive(Debug, Clone)]
 pub struct ICacher<IFunc, IType, IReturn>
 where
     IFunc: Fn(IType) -> IReturn,
@@ -129,6 +123,10 @@ where
     ///  anything.
     /// * If you need to have multiple parameters, enclose
     /// them in a tuple.
+    /// * You can set a capacity of the HashMap: this means that
+    /// the HashMap will be able to hold a certain amount of elements
+    /// without reallocating. This is memory efficient as reallocating
+    /// too much can slow the program and use too much memory.  
     ///
     /// # Example
     /// Caches a closure with 2 arguments, enclosed in a
@@ -136,14 +134,14 @@ where
     /// actually one.
     /// ```
     /// use icacher::ICacher;
-    /// let mut adder = ICacher::new(|(a, b): (i32, i32)| a + b);
+    /// let mut adder = ICacher::new(|(a, b): (i32, i32)| a + b, Some(1));
     /// // Explicit type for `a` and `b` are needed,
     /// // but can be inferred from usage.
     #[inline]
-    pub fn new(func: IFunc) -> Self {
+    pub fn new(func: IFunc, capacity: Option<usize>) -> Self {
         ICacher {
             func,
-            values: HashMap::new(),
+            values: HashMap::with_capacity(capacity.unwrap_or_default()),
         }
     }
 
@@ -156,7 +154,7 @@ where
     /// ```
     /// use icacher::ICacher;
     ///
-    /// let mut adder = ICacher::new(|(a, b)| a + b);
+    /// let mut adder = ICacher::new(|(a, b)| a + b, 1);
     /// let value = adder.with_arg((20, 30));
     ///
     /// assert_eq!(value, 50);
@@ -198,11 +196,11 @@ where
 
     /// Checks if a function's result is cached.
     #[inline]
-    pub fn is_cached(&self, arg: IType) -> bool {
+    pub fn is_cached(&self, arg: &IType) -> bool {
         self.values.contains_key(&arg)
     }
 
-    /// Removes a function's result and returns the result if it was found.
+    /// Removes a function's result and returns the result if it were found.
     ///
     /// Returns [`None`] if there weren't any found.
     ///
@@ -210,15 +208,15 @@ where
     /// ```
     /// use icacher::ICacher;
     ///
-    /// let mut multiplier = ICacher::new(|(a, b)| a * b);
+    /// let mut multiplier = ICacher::new(|(a, b)| a * b, Some(1));
     ///
     /// let _ = multiplier.with_arg((5, 5));
     ///
-    /// assert!(multiplier.is_cached((5, 5)));
+    /// assert!(multiplier.is_cached(&(5, 5)));
     ///
     /// let _ = multiplier.remove_cache((5, 5));
     ///
-    /// assert!(!multiplier.is_cached((5, 5)));
+    /// assert!(!multiplier.is_cached(&(5, 5)));
     /// ```
     #[inline]
     pub fn remove_cache(&mut self, arg: IType) -> Option<IReturn> {
@@ -226,6 +224,49 @@ where
             Some(val) => Some(val),
             None => None,
         }
+    }
+
+    /// Same as `ICacher::with_arg`, but it
+    /// does not return.
+    #[inline]
+    pub fn void(&mut self, arg: IType) {
+        self.with_arg(arg);
+    }
+
+    /// Caches the result only if the condition is true.
+    ///
+    /// # Notes
+    /// * If the value is already cached, it will return false
+    /// * The return type signals if the value has been cached or not.
+    ///
+    /// # Example
+    /// ```
+    /// use icacher::ICacher;
+    /// let mut adder = ICacher::new(|(a, b): (i32, i32)| a + b, 1);
+    ///
+    /// let a = 10;
+    /// let b = 10;
+    /// let c = 5;
+    ///
+    /// adder.void((a, b));
+    ///
+    /// let value = adder.cache_if(|| {a == b}, (a, b)); // this will not cache since it is already cached.
+    ///
+    /// let is_cached = adder.is_cached(&(a, b));
+    ///
+    /// let result = adder.cache_if(|| {is_cached}, (b, c));
+    ///
+    /// assert!(!value);
+    /// assert!(result);
+    /// ```
+    #[inline]
+    pub fn cache_if<Func: Fn() -> bool>(&mut self, func: Func, arg: IType) -> bool {
+        if self.is_cached(&arg) || !func() {
+            return false;
+        }
+
+        self.void(arg);
+        return true;
     }
 }
 
@@ -239,18 +280,4 @@ mod __private {
         C: Clone,
     {
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn caches_into_hashmap() {
-        let mut cacher = ICacher::new(|a: i32| a + 1);
-
-        cacher.with_arg(0);
-
-        assert!(cacher.is_cached(0));
-    }
-}
+}  
