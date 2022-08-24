@@ -1,6 +1,6 @@
 [package]
 name = "icacher"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["Rohan"]
 description = "A minimal crate for caching functions"
@@ -8,7 +8,7 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/rohankid1/ICacher"
 homepage = "https://github.com/rohankid1/ICacher"
-keywords = ["caching", "cache", "cacher", "function", "optimisation"]
+keywords = ["caching", "optimisation"]
 category = "Caching"
 
 [dependencies]
