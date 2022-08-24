@@ -180,7 +180,7 @@ where
 
     /// Modifies the closure of the Cacher.
     ///
-    /// Note that calling this function will reset the value to [`None`].
+    /// Note that calling this function will clear the HashMap.
     /// If you want to achieve the same but without resetting it,
     /// use the `to_unchanged()` method.
     #[inline]
